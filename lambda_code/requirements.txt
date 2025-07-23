@@ -1,0 +1,2 @@
+# Lambda runtime includes boto3, so we don't need to package it
+# The Python 3.11 runtime includes most standard library modules

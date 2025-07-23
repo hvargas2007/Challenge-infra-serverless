@@ -1,0 +1,56 @@
+name: Manually Destroy the Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: "confirm destroy"
+        required: true
+        default: "yes"
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read # This is required for actions/checkout
+  pull-requests: write # This is required for infracost to write on pull requests.
+
+jobs:
+  terraform_destroy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref_name }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials from AWS account
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{vars.AWS_ROLE}}
+          aws-region: ${{vars.AWS_REGION}}
+          role-session-name: GitHub-OIDC-TERRAFORM
+
+      - name: Configure git credentials to pull terraform modules
+        run: git config --global url."https://${{ secrets.USERNAME_GITHUB }}:${{ secrets.ACCESS_TOKEN }}@github.com".insteadOf https://github.com
+
+      - name: Update Backend S3 configurations
+        env:
+          PROJECT_NAME: ${{vars.PROJECT_NAME}}
+          AWS_BACKEND_ID: ${{vars.AWS_BACKEND}}
+        run: |
+
+          sed -i "s/BUCKET_NAME/$AWS_BACKEND_ID/" provider.tf          
+          sed -i "s/PROJECT_NAME/$PROJECT_NAME/" provider.tf
+          cat provider.tf
+
+      - name: Set Up Terraform Enviroment
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+
+      - name: Terraform Destroy
+        id: destroy
+        run: terraform destroy --auto-approve -var-file=env/${{ github.ref_name }}.auto.tfvars
