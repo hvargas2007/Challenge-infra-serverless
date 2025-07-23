@@ -54,4 +54,4 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply --auto-approve -var-file=env/${{ github.ref_name }}.auto.tfvars
+        run: terraform apply --auto-approve
