@@ -10,6 +10,14 @@ terraform {
       version = "~> 2.4"
     }
   }
+
+  backend "s3" {
+    bucket         = "BUCKET_NAME"
+    key            = "global/PROJECT_NAME/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    use_lockfile   = true
+  }
 }
 
 provider "aws" {
